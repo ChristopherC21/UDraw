@@ -1,0 +1,453 @@
+# Android Drawing App (Kotlin)
+
+This repository contains a minimal, GitHub-ready Android drawing application written in Kotlin. It includes touch drawing, undo, clear, color/brush-size controls, and exporting the canvas as a PNG to the app's external files directory.
+
+---
+
+## File structure
+
+```
+AndroidDrawingApp/
+├─ .gitignore
+├─ README.md
+├─ app/
+│  ├─ src/main/AndroidManifest.xml
+│  ├─ src/main/java/com/example/drawingapp/MainActivity.kt
+│  ├─ src/main/java/com/example/drawingapp/DrawingView.kt
+│  ├─ src/main/res/layout/activity_main.xml
+│  ├─ src/main/res/values/colors.xml
+│  ├─ src/main/res/values/strings.xml
+│  ├─ src/main/res/values/styles.xml
+│  └─ build.gradle
+├─ build.gradle
+└─ settings.gradle
+```
+
+---
+
+## .gitignore
+
+```gitignore
+/.gradle
+/local.properties
+/.idea
+/build
+**/build
+/.DS_Store
+/*.iml
+gradle-wrapper.properties
+```
+
+---
+
+## README.md
+
+```markdown
+# Android Drawing App
+
+Minimal Android app that lets users draw with touch, undo, clear, change color/brush size, and save the drawing as PNG.
+
+## How to run
+
+1. Open the project in Android Studio.
+2. Build and run on an Android device or emulator.
+
+## Features
+
+- Freehand drawing
+- Undo last stroke
+- Clear canvas
+- Change brush color and size
+- Export canvas to PNG (saved to app external files dir)
+```
+
+---
+
+## settings.gradle
+
+```gradle
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+rootProject.name = "AndroidDrawingApp"
+include ":app"
+```
+
+---
+
+## root build.gradle
+
+```gradle
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+```
+
+---
+
+## app/build.gradle
+
+```gradle
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.drawingapp"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.0"
+    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
+}
+```
+
+---
+
+## AndroidManifest.xml
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.drawingapp">
+
+    <application
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.DrawingApp">
+        <activity android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
+```
+
+---
+
+## res/values/strings.xml
+
+```xml
+<resources>
+    <string name="app_name">Drawing App</string>
+</resources>
+```
+
+---
+
+## res/values/colors.xml
+
+```xml
+<resources>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="red">#F44336</color>
+    <color name="blue">#2196F3</color>
+    <color name="green">#4CAF50</color>
+</resources>
+```
+
+---
+
+## res/values/styles.xml
+
+```xml
+<resources>
+    <style name="Theme.DrawingApp" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/blue</item>
+        <item name="colorPrimaryVariant">@color/blue</item>
+        <item name="colorOnPrimary">@color/white</item>
+    </style>
+</resources>
+```
+
+---
+
+## res/layout/activity_main.xml
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <com.example.drawingapp.DrawingView
+        android:id="@+id/drawingView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_margin="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/controls"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/controls"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <Button
+            android:id="@+id/btnUndo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Undo" />
+
+        <Button
+            android:id="@+id/btnClear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Clear"
+            android:layout_marginStart="8dp" />
+
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save"
+            android:layout_marginStart="8dp" />
+
+        <Button
+            android:id="@+id/btnColor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Color"
+            android:layout_marginStart="8dp" />
+
+        <SeekBar
+            android:id="@+id/seekBrush"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:max="80"
+            android:progress="12"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+```
+
+---
+
+## src/main/java/com/example/drawingapp/DrawingView.kt
+
+```kotlin
+package com.example.drawingapp
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.util.AttributeSet
+import android.view.MotionEvent
+import android.view.View
+
+private data class Stroke(val path: Path, val paint: Paint)
+
+class DrawingView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null
+) : View(context, attrs) {
+
+    private var currentPaint = Paint().apply {
+        isAntiAlias = true
+        isDither = true
+        style = Paint.Style.STROKE
+        strokeJoin = Paint.Join.ROUND
+        strokeCap = Paint.Cap.ROUND
+        strokeWidth = 12f
+        color = 0xFF000000.toInt()
+    }
+
+    private val strokes = mutableListOf<Stroke>()
+    private var currentPath = Path()
+
+    private var bitmap: Bitmap? = null
+    private var bitmapCanvas: Canvas? = null
+
+    fun setBrushSize(px: Float) {
+        currentPaint = Paint(currentPaint).apply { strokeWidth = px }
+    }
+
+    fun setColor(color: Int) {
+        currentPaint = Paint(currentPaint).apply { this.color = color }
+    }
+
+    fun undo() {
+        if (strokes.isNotEmpty()) {
+            strokes.removeAt(strokes.size - 1)
+            invalidate()
+        }
+    }
+
+    fun clear() {
+        strokes.clear()
+        invalidate()
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        if (w > 0 && h > 0) {
+            bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            bitmapCanvas = Canvas(bitmap!!)
+        }
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        for (s in strokes) {
+            canvas.drawPath(s.path, s.paint)
+        }
+        canvas.drawPath(currentPath, currentPaint)
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        val x = event.x
+        val y = event.y
+
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                currentPath = Path()
+                currentPath.moveTo(x, y)
+            }
+            MotionEvent.ACTION_MOVE -> {
+                currentPath.lineTo(x, y)
+            }
+            MotionEvent.ACTION_UP -> {
+                val strokePaint = Paint(currentPaint)
+                val finishedPath = Path(currentPath)
+                strokes.add(Stroke(finishedPath, strokePaint))
+                currentPath = Path()
+            }
+            else -> return false
+        }
+
+        invalidate()
+        return true
+    }
+
+    fun exportBitmap(): Bitmap {
+        val outBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(outBitmap)
+        canvas.drawColor(0xFFFFFFFF.toInt())
+        for (s in strokes) canvas.drawPath(s.path, s.paint)
+        return outBitmap
+    }
+}
+```
+
+---
+
+## src/main/java/com/example/drawingapp/MainActivity.kt
+
+```kotlin
+package com.example.drawingapp
+
+import android.graphics.Color
+import android.graphics.Bitmap
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.widget.Button
+import android.widget.SeekBar
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var drawingView: DrawingView
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        drawingView = findViewById(R.id.drawingView)
+
+        val btnUndo: Button = findViewById(R.id.btnUndo)
+        val btnClear: Button = findViewById(R.id.btnClear)
+        val btnSave: Button = findViewById(R.id.btnSave)
+        val btnColor: Button = findViewById(R.id.btnColor)
+        val seekBrush: SeekBar = findViewById(R.id.seekBrush)
+
+        btnUndo.setOnClickListener { drawingView.undo() }
+        btnClear.setOnClickListener { drawingView.clear() }
+        btnColor.setOnClickListener { toggleColor() }
+
+        seekBrush.max = 80
+        seekBrush.progress = 12
+        seekBrush.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                val size = (progress.coerceAtLeast(1)).toFloat()
+                drawingView.setBrushSize(size)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        btnSave.setOnClickListener { saveDrawing() }
+    }
+
+    private var colorIndex = 0
+    private val colors = listOf(Color.BLACK, Color.RED, Color.BLUE, Color.GREEN)
+
+    private fun toggleColor() {
+        colorIndex = (colorIndex + 1) % colors.size
+        drawingView.setColor(colors[colorIndex])
+    }
+
+    private fun saveDrawing() {
+        val bitmap: Bitmap = drawingView.exportBitmap()
+        val filename = "drawing_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.png"
+        try {
+            val storageDir = getExternalFilesDir(null)
+            val outFile = File(storageDir, filename)
+            FileOutputStream(outFile).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+}
+```
